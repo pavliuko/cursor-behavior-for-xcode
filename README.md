@@ -16,9 +16,9 @@ Open the currently active file from Xcode in Cursor at the same line and column.
 ### Install
 1. Clone or download this repo.
 2. Make the script executable:
-   ```bash
+```
 chmod +x /absolute/path/to/open-in-cursor.sh
-   ```
+```
 3. Optional (recommended): Move or symlink it to a stable location, e.g. `~/bin/open-in-cursor.sh`.
 
 ### Configure Xcode Behavior (keyboard shortcut)
