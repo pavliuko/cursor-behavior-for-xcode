@@ -29,17 +29,23 @@ echo "Getting file path from Xcode..."
 file_path=$(osascript -e "
 tell application \"Xcode\"
     try
-        -- Get the filename from the current window title
-        set last_word_in_main_window to (word -1 of (get name of window 1))
+        -- Get the window title and parse it
+        set window_title to (get name of window 1)
         
-        if (last_word_in_main_window is \"Edited\") then
-            error \"Please save the current document before running this script\"
+        -- Check if file has unsaved changes (ends with \"— Edited\")
+        if window_title ends with \"— Edited\" then
+            -- Remove \"— Edited\" and get the filename
+            set title_without_edited to text 1 thru -10 of window_title
+            set filename to (word -1 of title_without_edited)
         else
-            -- Find the document whose name ends with the filename from window title
-            set current_document to document 1 whose name ends with last_word_in_main_window
-            set current_document_path to path of current_document
-            return current_document_path
+            -- Get filename directly
+            set filename to (word -1 of window_title)
         end if
+        
+        -- Find the document whose name matches the filename
+        set current_document to document 1 whose name is filename
+        set current_document_path to path of current_document
+        return current_document_path
         
     on error errMsg
         if errMsg contains \"Can't get document\" then
@@ -60,42 +66,48 @@ echo "Getting caret position from Xcode..."
 caret_position=$(osascript -e "
 tell application \"Xcode\"
     try
-        -- Get the filename from the current window title  
-        set last_word_in_main_window to (word -1 of (get name of window 1))
+        -- Get the window title and parse it
+        set window_title to (get name of window 1)
         
-        if (last_word_in_main_window is \"Edited\") then
-            error \"Please save the current document before running this script\"
+        -- Check if file has unsaved changes (ends with \"— Edited\")
+        if window_title ends with \"— Edited\" then
+            -- Remove \"— Edited\" and get the filename
+            set title_without_edited to text 1 thru -10 of window_title
+            set filename to (word -1 of title_without_edited)
         else
-            -- Find the same document and get caret position
-            set current_document to document 1 whose name ends with last_word_in_main_window
+            -- Get filename directly
+            set filename to (word -1 of window_title)
+        end if
+        
+        -- Find the same document and get caret position
+        set current_document to document 1 whose name is filename
+        
+        -- Get the selected character range directly (loc is 0-based)
+        set {loc, len} to selected character range of current_document
+        set fullText to the text of current_document
+        
+        -- Handle start-of-file
+        if loc = 0 then
+            return \"1:1\"
+        else
+            -- AppleScript text is 1-based; take the prefix up to loc characters
+            set prefix to text 1 thru loc of fullText
             
-            -- Get the selected character range directly (loc is 0-based)
-            set {loc, len} to selected character range of current_document
-            set fullText to the text of current_document
-            
-            -- Handle start-of-file
-            if loc = 0 then
-                return \"1:1\"
+            -- Check if caret is at end of line (prefix ends with newline)
+            if prefix ends with return or prefix ends with linefeed then
+                -- Caret is at end of line, remove the newline for calculation
+                set prefixWithoutNewline to text 1 thru -2 of prefix
+                set lineNum to (count paragraphs of prefixWithoutNewline)
+                set lastPara to paragraph -1 of prefixWithoutNewline
+                set colNum to (length of lastPara) + 1
             else
-                -- AppleScript text is 1-based; take the prefix up to loc characters
-                set prefix to text 1 thru loc of fullText
-                
-                -- Check if caret is at end of line (prefix ends with newline)
-                if prefix ends with return or prefix ends with linefeed then
-                    -- Caret is at end of line, remove the newline for calculation
-                    set prefixWithoutNewline to text 1 thru -2 of prefix
-                    set lineNum to (count paragraphs of prefixWithoutNewline)
-                    set lastPara to paragraph -1 of prefixWithoutNewline
-                    set colNum to (length of lastPara) + 1
-                else
-                    -- Normal case: caret is in middle of line
-                    set lineNum to (count paragraphs of prefix)
-                    set lastPara to paragraph -1 of prefix
-                    set colNum to (length of lastPara)
-                end if
-                
-                return (lineNum as string) & \":\" & (colNum as string)
+                -- Normal case: caret is in middle of line
+                set lineNum to (count paragraphs of prefix)
+                set lastPara to paragraph -1 of prefix
+                set colNum to (length of lastPara)
             end if
+            
+            return (lineNum as string) & \":\" & (colNum as string)
         end if
         
     on error errMsg
