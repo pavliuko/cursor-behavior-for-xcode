@@ -32,14 +32,24 @@ tell application \"Xcode\"
         -- Get the window title and parse it
         set window_title to (get name of window 1)
         
-        -- Check if file has unsaved changes (ends with \"— Edited\")
+        -- Parse filename from window title like \"ProjectName — FileName.ext — Edited\"
         if window_title ends with \"— Edited\" then
-            -- Remove \"— Edited\" and get the filename
+            -- Remove \"— Edited\" from the end
             set title_without_edited to text 1 thru -10 of window_title
-            set filename to (word -1 of title_without_edited)
         else
-            -- Get filename directly
-            set filename to (word -1 of window_title)
+            set title_without_edited to window_title
+        end if
+        
+        -- Find the filename part (after the first \" — \" separator)
+        set AppleScript's text item delimiters to \" — \"
+        set title_parts to text items of title_without_edited
+        set AppleScript's text item delimiters to \"\"
+        
+        if (count of title_parts) >= 2 then
+            set filename to item 2 of title_parts
+        else
+            -- Fallback: use the whole title if no separator found
+            set filename to title_without_edited
         end if
         
         -- Find the document whose name matches the filename
@@ -69,14 +79,24 @@ tell application \"Xcode\"
         -- Get the window title and parse it
         set window_title to (get name of window 1)
         
-        -- Check if file has unsaved changes (ends with \"— Edited\")
+        -- Parse filename from window title like \"ProjectName — FileName.ext — Edited\"
         if window_title ends with \"— Edited\" then
-            -- Remove \"— Edited\" and get the filename
+            -- Remove \"— Edited\" from the end
             set title_without_edited to text 1 thru -10 of window_title
-            set filename to (word -1 of title_without_edited)
         else
-            -- Get filename directly
-            set filename to (word -1 of window_title)
+            set title_without_edited to window_title
+        end if
+        
+        -- Find the filename part (after the first \" — \" separator)
+        set AppleScript's text item delimiters to \" — \"
+        set title_parts to text items of title_without_edited
+        set AppleScript's text item delimiters to \"\"
+        
+        if (count of title_parts) >= 2 then
+            set filename to item 2 of title_parts
+        else
+            -- Fallback: use the whole title if no separator found
+            set filename to title_without_edited
         end if
         
         -- Find the same document and get caret position
